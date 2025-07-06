@@ -31,8 +31,7 @@ function App() {
     }
   };
 
-  const handleDownload = async (e) => {
-    e.preventDefault();
+  const handleCSVRequest = async (endpoint) => {
     if (!file) return alert("Seleccioná un archivo CSV");
 
     setIsLoading(true);
@@ -40,7 +39,7 @@ function App() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("https://byma-scraper.onrender.com/upload-csv", {
+      const response = await fetch(`https://byma-scraper.onrender.com${endpoint}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`
@@ -54,7 +53,7 @@ function App() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "bonos_output.csv";
+      a.download = endpoint === "/upload-csv" ? "bonos_output.csv" : "bonos_nueva.csv";
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
@@ -96,7 +95,7 @@ function App() {
           <button type="submit">Iniciar sesión</button>
         </form>
       ) : (
-        <form onSubmit={handleDownload}>
+        <form onSubmit={(e) => e.preventDefault()}>
           <div>
             <label>
               Seleccioná archivo CSV:
@@ -108,9 +107,24 @@ function App() {
               />
             </label>
           </div>
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? "Generando..." : "Generar CSV"}
-          </button>
+          <div style={{ marginTop: "1rem" }}>
+            <button
+              type="button"
+              onClick={() => handleCSVRequest("/upload-csv")}
+              disabled={isLoading}
+            >
+              {isLoading ? "Procesando..." : "Generar CSV Tradicional"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleCSVRequest("/nueva-api")}
+              disabled={isLoading}
+              style={{ marginLeft: "1rem" }}
+            >
+              {isLoading ? "Procesando..." : "Generar CSV Nuevo"}
+            </button>
+          </div>
         </form>
       )}
     </div>
