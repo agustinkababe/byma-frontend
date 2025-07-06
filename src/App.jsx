@@ -10,7 +10,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // Submit con Enter
+    e.preventDefault();
     try {
       const response = await fetch(`${BASE_URL}/token`, {
         method: "POST",
@@ -72,6 +72,13 @@ function App() {
     setIsLoading(false);
   };
 
+  const handleLogout = () => {
+    setToken("");
+    setCsvFile(null);
+    setUsername("");
+    setPassword("");
+  };
+
   return (
     <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif", maxWidth: 600, margin: "0 auto" }}>
       <h1 style={{ textAlign: "center" }}>Tickers Sky</h1>
@@ -96,6 +103,13 @@ function App() {
         </form>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <button
+            onClick={handleLogout}
+            style={{ alignSelf: "flex-end", backgroundColor: "#dc3545", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "4px", cursor: "pointer" }}
+          >
+            Cerrar sesión
+          </button>
+
           <input type="file" accept=".csv" onChange={handleFileChange} />
           <button
             disabled={!csvFile || isLoading}
