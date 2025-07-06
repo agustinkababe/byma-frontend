@@ -1,45 +1,46 @@
 import React, { useState } from "react";
 
 function App() {
+  const [token, setToken] = useState(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [token, setToken] = useState("");
   const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const formData = new URLSearchParams();
-      formData.append("username", username);
-      formData.append("password", password);
-
-      const response = await fetch("https://byma-scraper.onrender.com/token", {
+      const response = await fetch("https://tickerssky-backend.onrender.com/token", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+          username,
+          password
+        })
       });
 
-      if (!response.ok) throw new Error("Login failed");
+      if (!response.ok) {
+        throw new Error("Credenciales inválidas");
+      }
 
       const data = await response.json();
       setToken(data.access_token);
-      alert("Autenticado correctamente");
     } catch (error) {
-      console.error("Error de login:", error);
-      alert("Credenciales inválidas");
+      alert(error.message);
     }
   };
 
-  const handleCSVRequest = async (endpoint) => {
-    if (!file) return alert("Seleccioná un archivo CSV");
+  const handleApiCall = async (endpoint) => {
+    if (!file || !token) return;
 
     setIsLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-      const response = await fetch(`https://byma-scraper.onrender.com${endpoint}`, {
+    try {
+      const response = await fetch(`https://tickerssky-backend.onrender.com/${endpoint}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`
@@ -47,85 +48,85 @@ function App() {
         body: formData
       });
 
-      if (!response.ok) throw new Error("Falló la descarga del CSV");
+      if (!response.ok) {
+        throw new Error("Error al generar CSV");
+      }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = endpoint === "/upload-csv" ? "bonos_output.csv" : "bonos_nueva.csv";
+      a.download = `${endpoint}.csv`;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Error al generar CSV:", error);
-      alert("No se pudo generar el archivo.");
+      alert(error.message);
     }
     setIsLoading(false);
   };
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
-      <h1>BYMA Scraper</h1>
+    <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif", maxWidth: "500px", margin: "auto" }}>
+      <h1 style={{ textAlign: "center" }}>Tickers Sky</h1>
 
       {!token ? (
         <form onSubmit={handleLogin}>
-          <div>
+          <div style={{ marginBottom: "1rem" }}>
             <label>
-              Usuario:
+              Usuario:{" "}
               <input
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                required
+                style={{ padding: "0.5rem", width: "100%", boxSizing: "border-box" }}
                 autoFocus
               />
             </label>
           </div>
-          <div>
+          <div style={{ marginBottom: "1rem" }}>
             <label>
-              Contraseña:
+              Contraseña:{" "}
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                required
+                style={{ padding: "0.5rem", width: "100%", boxSizing: "border-box" }}
               />
             </label>
           </div>
-          <button type="submit">Iniciar sesión</button>
+          <button
+            type="submit"
+            disabled={!username || !password}
+            style={{ width: "100%", padding: "0.75rem", backgroundColor: "#1976d2", color: "white", border: "none" }}
+          >
+            Iniciar sesión
+          </button>
         </form>
       ) : (
-        <form onSubmit={(e) => e.preventDefault()}>
-          <div>
+        <>
+          <div style={{ marginBottom: "1rem" }}>
             <label>
-              Seleccioná archivo CSV:
-              <input
-                type="file"
-                accept=".csv"
-                onChange={e => setFile(e.target.files[0])}
-                required
-              />
+              Seleccionar archivo CSV:{" "}
+              <input type="file" accept=".csv" onChange={e => setFile(e.target.files[0])} />
             </label>
           </div>
-          <div style={{ marginTop: "1rem" }}>
-            <button
-              type="button"
-              onClick={() => handleCSVRequest("/upload-csv")}
-              disabled={isLoading}
-            >
-              {isLoading ? "Procesando..." : "Generar CSV Tradicional"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleCSVRequest("/nueva-api")}
-              disabled={isLoading}
-              style={{ marginLeft: "1rem" }}
-            >
-              {isLoading ? "Procesando..." : "Generar CSV Nuevo"}
-            </button>
-          </div>
-        </form>
+          <button
+            onClick={() => handleApiCall("upload-csv")}
+            disabled={!file || isLoading}
+            style={{ width: "100%", padding: "0.75rem", marginBottom: "0.5rem" }}
+          >
+            {isLoading ? "Generando..." : "Generar Byma CSV"}
+          </button>
+          <button
+            onClick={() => handleApiCall("upload-alpha-csv")}
+            disabled={!file || isLoading}
+            style={{ width: "100%", padding: "0.75rem" }}
+          >
+            {isLoading ? "Generando..." : "Generar Alpha CSV"}
+          </button>
+        </>
       )}
     </div>
   );
